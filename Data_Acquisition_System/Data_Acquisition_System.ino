@@ -15,16 +15,20 @@ File data_file; // creating a data file
 char key = 0;
 String file_title;
 
-int analogPin_clk = 0; // Serial/Clock line for Load cell
-int analogPin_data = 1;  // Data line from load cell
+int Pin_clk_1 = 2; // Serial/Clock line for Load cell 1
+int Pin_data_1 = 3;  // Data line from load cell 1
 
-HX711 load_cell1(analogPin_clk, analogPin_data, 128);
+int Pin_clk_2 = 4; // Serial/Clock line for Load cell 2
+int Pin_data_2 = 5;  // Data line from load cell 2
+
+HX711 load_cell1(Pin_clk_1, Pin_data_1, 128);
+HX711 load_cell2(Pin_clk_2, Pin_data_2, 128);
 
 unsigned long time_limit;
 
 void setup() {
   Serial.begin(9600);
-
+ 
   Serial.println("Initializing the SD card....."); // output to show that SD card is initializing
 
   while (!SD.begin(4)) { // checks if SD work
@@ -32,12 +36,26 @@ void setup() {
     return;
   }
   Serial.println("Initialization complete.\n");
+  
   menu();
+  Serial.flush();
 
+  
+while(!load_cell1.is_ready() && !load_cell2.is_ready())
+{
   load_cell1.power_up();
+  load_cell2.power_up();
+  load_cell1.tare();
+  load_cell2.tare();
+  load_cell1.set_scale((float)1);
+  load_cell2.set_scale((float)1);
+  digitalWrite(2,LOW)
+}
+
 }
 
 void loop() {
+
 
   while (!data_file)
     data_file = SD.open("test.txt", FILE_WRITE);
@@ -50,7 +68,7 @@ void loop() {
   }
 
   if (key == '1') { // Prints the data to the file
-    load_cellprinter(load_cell1);
+    load_cellprinter();
     data_file.println("Test case working");
     data_file.println();
     data_file.close();
@@ -64,8 +82,7 @@ void loop() {
     time_reciever(time_limit);
 
     while (millis() < time_limit) {
-      delay(4000);
-      load_cellprinter(load_cell1);
+      load_cellprinter();
     }
     data_file.close();
     Serial.println("Recording complete");
@@ -98,10 +115,14 @@ void time_reciever(unsigned long &time_limit)
   Serial.println(time_limit);
 }
 
-void load_cellprinter(HX711 load_cell)
+void load_cellprinter()
 {
     data_file.print(millis());
     data_file.print(" - Load cell 1 - ");
     data_file.println(load_cell1.read());
+
+    data_file.print(millis());
+    data_file.print(" - Load cell 2 - ");
+    data_file.println(load_cell2.read());
 }
 
